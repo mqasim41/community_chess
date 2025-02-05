@@ -46,6 +46,22 @@ if move_Nc6 in game.legal_moves:
 else:
     print("Error: Nc6 is not legal on the board after e4, e5, Nf3.")
 
+# Pre-play move 2. Bb5
+move_Nf3 = chess.Move.from_uci("f1b5")
+if move_Nf3 in game.legal_moves:
+    game.push(move_Nf3)
+    print("Pre-played move: Bf5")
+else:
+    print("Error: Bf5 is not legal.")
+
+# Pre-play move 2... Nc6
+move_Nc6 = chess.Move.from_uci("a7a6")
+if move_Nc6 in game.legal_moves:
+    game.push(move_Nc6)
+    print("Pre-played move: a6")
+else:
+    print("Error: a6 is not legal.")
+
 # Global dictionary to store votes for each legal move (keyed by UCI string)
 votes = defaultdict(int)
 
@@ -104,8 +120,8 @@ def voting_loop():
     """
     Background thread to check if the voting period has expired.
     When expired, if there are any votes, it applies the move with the most votes.
-    If no votes were cast, it simply resets the timer and advances to the next round.
-    In either case, it then optionally lets the bot move.
+    If no votes were cast, it resets the timer with no changes.
+    If a community move is made, the bot then makes a move.
     """
     global votes, last_vote_time, game, current_round, votes_record
 
@@ -114,42 +130,42 @@ def voting_loop():
         if game.is_game_over():
             continue  # Game finished, do nothing
 
-        # Check if the voting period has expired (regardless of whether votes exist)
+        # Check if the voting period has expired
         if time.time() - last_vote_time > VOTING_PERIOD:
             if votes:
                 # Determine the move with the most votes (using UCI key)
                 selected_move_uci = max(votes, key=votes.get)
                 selected_move = chess.Move.from_uci(selected_move_uci)
 
-                # Verify the move is still legal (in case game state changed)
+                # Verify the move is still legal
                 if selected_move in game.legal_moves:
                     print(f"Community-selected move: {selected_move_uci} with {votes[selected_move_uci]} votes. ({game.san(selected_move)})")
                     game.push(selected_move)
                 else:
                     print("Selected move is no longer legal. Skipping.")
+
+                # Let the bot make a move if the game is not over
+                if not game.is_game_over():
+                    bot_move_uci = get_bot_move()
+                    if bot_move_uci:
+                        bot_move = chess.Move.from_uci(bot_move_uci)
+                        if bot_move in game.legal_moves:
+                            print(f"Bot moves: {bot_move_uci} ({game.san(bot_move)})")
+                            game.push(bot_move)
+                        else:
+                            print("Invalid bot move received from API")
+                    else:
+                        print("Bot could not determine a move.")
             else:
-                print("Voting period expired with no votes. Advancing round without applying a move.")
+                print("Voting period expired with no votes. Resetting timer with no changes.")
 
             # Reset votes and timer for next move
             votes = defaultdict(int)
             last_vote_time = time.time()
 
-            # Increment the round counter (clients can vote again in the new round)
+            # Increment the round counter
             current_round += 1
             votes_record[current_round] = set()
-
-            # Let the bot make a move if the game is not over
-            if not game.is_game_over():
-                bot_move_uci = get_bot_move()
-                if bot_move_uci:
-                    bot_move = chess.Move.from_uci(bot_move_uci)
-                    if bot_move in game.legal_moves:
-                        print(f"Bot moves: {bot_move_uci} ({game.san(bot_move)})")
-                        game.push(bot_move)
-                    else:
-                        print("Invalid bot move received from API")
-                else:
-                    print("Bot could not determine a move.")
 
 # Start the background voting thread
 threading.Thread(target=voting_loop, daemon=True).start()
