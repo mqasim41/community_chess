@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NUST Chess Club vs Martin</title>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Oswald:wght@500&display=swap" rel="stylesheet">
+  <style>
+    /* Animations */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+    
+    @keyframes clickAnim {
+      0% { transform: scale(1); }
+      50% { transform: scale(0.95); }
+      100% { transform: scale(1); }
+    }
+    
+    :root {
+      --main-bg: #f7f7f7;         /* Overall page background */
+      --container-bg: #ffffff;      /* Panels, boards, etc. */
+      --primary-text: #333333;
+      --accent: #00897b;           /* Accent colour (teal) */
+      --shadow: rgba(0, 0, 0, 0.1);
+      --board-width: 600px;         /* Maximum board width */
+    }
+    
+    body {
+      font-family: 'Roboto', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: var(--main-bg);
+      color: var(--primary-text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    h1 {
+      text-align: center;
+      font-family: 'Oswald', sans-serif;
+      font-size: 3em;
+      color: var(--accent);
+      text-shadow: 1px 1px 4px var(--shadow);
+      animation: fadeInDown 1s ease-out;
+      margin-bottom: 0.5em;
+    }
+    
+    .explanation {
+      max-width: 800px;
+      background: var(--container-bg);
+      padding: 1.2rem 1.5rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px var(--shadow);
+      margin: 0 auto 1.5em;
+      text-align: center;
+      font-size: 1.1em;
+      line-height: 1.5;
+    }
+    
+    /* Modal Styles */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 200;
+    }
+    
+    .modal {
+      background: var(--container-bg);
+      color: var(--primary-text);
+      padding: 2rem;
+      border-radius: 8px;
+      text-align: center;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      animation: fadeInDown 0.5s ease-out;
+    }
+    
+    .modal button {
+      margin-top: 1rem;
+      padding: 10px 20px;
+      background: var(--accent);
+      border: none;
+      border-radius: 4px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1em;
+      transition: background 0.2s;
+    }
+    
+    .modal button:hover {
+      background: #00796b;
+    }
+    
+    .timer {
+      text-align: center;
+      margin: 1em 0;
+      font-size: 1.5em;
+      animation: fadeInDown 1s ease-out;
+    }
+    
+    .timer strong {
+      animation: pulse 1.5s infinite;
+    }
+    
+    .progress-bar {
+      width: 90%;
+      max-width: 600px;
+      height: 12px;
+      background: #e0e0e0;
+      border-radius: 6px;
+      overflow: hidden;
+      margin: 0.5em auto 1em;
+    }
+    
+    .progress {
+      width: 100%;
+      height: 100%;
+      background: var(--accent);
+      transition: width 0.5s ease;
+    }
+    
+    /* Main layout using flex */
+    .main-content {
+      display: flex;
+      gap: 2em;
+      justify-content: center;
+      align-items: flex-start;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .board-wrapper, .moves-wrapper {
+      background: var(--container-bg);
+      border-radius: 8px;
+      box-shadow: 0 6px 30px rgba(0, 0, 0, 0.15);
+      padding: 1em;
+    }
+    
+    .board-wrapper {
+      flex: 1 1 0;
+      max-width: var(--board-width);
+    }
+    
+    .board {
+      width: 100%;
+      height: auto;
+    }
+    
+    .moves-wrapper {
+      flex: 1 1 300px;
+      max-width: 400px;
+    }
+    
+    .moves-wrapper h2 {
+      text-align: center;
+      color: var(--accent);
+      margin-top: 0;
+    }
+    
+    .moves-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8em;
+      justify-content: center;
+    }
+    
+    .move-button {
+      flex: 1 1 45%;  /* Two buttons per row by default */
+      padding: 10px 8px;
+      border: none;
+      border-radius: 6px;
+      background: var(--container-bg);
+      color: var(--primary-text);
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.2s ease;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      font-size: 0.95em;
+      min-width: 100px;
+    }
+    
+    .move-button:hover {
+      background: #f2f2f2;
+    }
+    
+    .move-button:active {
+      animation: clickAnim 0.2s forwards;
+    }
+    
+    /* Special move border colors */
+    .move-button[data-type="capture"] { border-left: 4px solid #e67e22; }
+    .move-button[data-type="check"] { border-left: 4px solid #c0392b; }
+    .move-button[data-type="castle"] { border-left: 4px solid #16a085; }
+    .move-button[data-type="promotion"] { border-left: 4px solid #8e44ad; }
+    
+    .vote-count {
+      background: rgba(0,0,0,0.05);
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.9em;
+      font-weight: bold;
+      margin-left: 8px;
+      color: var(--accent);
+    }
+    
+    #game-over {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.85);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 300;
+    }
+    
+    .game-over-box {
+      background: var(--container-bg);
+      padding: 2rem;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 6px 30px rgba(0,0,0,0.3);
+      color: var(--primary-text);
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .main-content {
+        flex-direction: column;
+        align-items: center;
+      }
+      .board-wrapper, .moves-wrapper {
+        width: 100%;
+        max-width: 100%;
+        margin-bottom: 1em;
+      }
+      .move-button {
+        flex: 1 1 100%;
+        margin: 0.3em 0;
+      }
+      .moves-grid {
+        flex-direction: column;
+        align-items: stretch;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .move-button {
+        font-size: 0.85em;
+        padding: 8px 6px;
+      }
+      .vote-count {
+        padding: 2px 6px;
+        font-size: 0.8em;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Modal for Explanation -->
+  <div class="modal-overlay" id="explanation-modal">
+    <div class="modal">
+      <h2>Welcome to NUST Chess Club vs Martin!</h2>
+      <p>Join the battle of wits! Vote for the next move and help decide the fate of this epic chess showdown. Every vote counts – choose wisely!</p>
+      <button onclick="closeModal()">Let's Play</button>
+    </div>
+  </div>
+  
+  <h1>NUST Chess Club vs Martin</h1>
+  
+  <div class="explanation">
+    <p>Welcome to the most exciting community chess match! Here, the brilliant minds of the NUST Chess Club take on the tactical prowess of Martin. Cast your vote on the next move and help shape the outcome of this epic battle.</p>
+    <p>Simply click on the move you think is best, and watch as the community decision unfolds on the board.</p>
+  </div>
+  
+  <div class="timer">
+    <!-- Notice the timer now uses the formatted time -->
+    <div>Time remaining: <strong id="formatted-time">{{ time_left_formatted }}</strong></div>
+    <div class="progress-bar">
+      <!-- Progress bar now computed using voting_duration -->
+      <div class="progress" style="width: {{ (time_left / voting_duration) * 100 }}%"></div>
+    </div>
+  </div>
+  
+  <!-- Main content area: board and voting panel -->
+  <div class="main-content">
+    <div class="board-wrapper">
+      <!-- Coordinates can be optionally placed on the board -->
+      <div class="board" id="board">
+        {{ board_svg | safe }}
+      </div>
+    </div>
+    <div class="moves-wrapper">
+      <h2>Next Move Voting</h2>
+      <div class="moves-grid" id="moves-list">
+        {% for move in legal_moves %}
+          <button class="move-button" 
+                  onclick="voteMove('{{ move.uci }}')"
+                  data-type="{{ 'check' if '+' in move.san else 'capture' if 'x' in move.san else 'castle' if 'O-O' in move.san else 'promotion' if '=' in move.san else '' }}">
+            <span>{{ move.san }}</span>
+            <span class="vote-count" id="vote-{{ move.uci }}">{{ votes.get(move.uci, 0) }}</span>
+          </button>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  
+  <div id="game-over">
+    <div class="game-over-box">
+      <h2>Game Over!</h2>
+      <p>The game has concluded. Refresh to start a new game.</p>
+    </div>
+  </div>
+  
+  <script>
+    // Close the explanation modal
+    function closeModal() {
+      document.getElementById('explanation-modal').style.display = 'none';
+    }
+    
+    function voteMove(move) {
+      fetch("/vote", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ move })
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          document.getElementById(`vote-${move}`).textContent = data.votes;
+        } else {
+          alert(data.message);
+        }
+      });
+    }
+    
+    function getMoveType(moveSan) {
+      if (moveSan.includes('+')) return 'check';
+      if (moveSan.includes('x')) return 'capture';
+      if (moveSan.includes('O-O')) return 'castle';
+      if (moveSan.includes('=')) return 'promotion';
+      return '';
+    }
+    
+    setInterval(() => {
+      fetch("/state")
+      .then(response => response.json())
+      .then(data => {
+        // Update board and timer
+        document.getElementById('board').innerHTML = data.board_svg;
+        // Update the formatted time display
+        document.getElementById('formatted-time').textContent = data.formatted_time_left;
+        // Update progress bar using the total voting duration
+        document.querySelector('.progress').style.width = `${(data.time_left / data.voting_duration) * 100}%`;
+    
+        // Update moves list with both UCI and SAN notation.
+        const movesDiv = document.getElementById('moves-list');
+        movesDiv.innerHTML = data.legal_moves.map(move => `
+          <button class="move-button" 
+                  onclick="voteMove('${move.uci}')"
+                  data-type="${getMoveType(move.san)}">
+            <span>${move.san}</span>
+            <span class="vote-count" id="vote-${move.uci}">${data.votes[move.uci] || 0}</span>
+          </button>
+        `).join('');
+    
+        // Update game over state
+        document.getElementById('game-over').style.display = data.game_over ? 'flex' : 'none';
+      });
+    }, 3000);
+  </script>
+</body>
+</html>
